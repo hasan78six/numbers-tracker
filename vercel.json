@@ -1,0 +1,6 @@
+{
+    "rewrites": [{ "source": "/(.*)", "destination": "/" }],
+    "buildCommand": "npm run test && npm run build",
+    "installCommand": "npm install",
+    "devCommand": "npm run dev"
+}
