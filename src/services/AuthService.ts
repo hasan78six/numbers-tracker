@@ -13,19 +13,33 @@ export async function apiSignIn(
 ): Promise<SignInResponse> {
     const { email, password } = data
 
-    const { data: response, error } =
-        await supabaseClient.auth.signInWithPassword({
-            email,
-            password,
-        })
+    try {
+        const { data: response, error } =
+            await supabaseClient.auth.signInWithPassword({
+                email,
+                password,
+            })
 
-    if (error) throw error
+        if (error) {
+            console.error('Supabase auth error:', error)
+            throw error
+        }
 
-    const profile = await fetchUserProfile(response.user.id)
+        if (!response.user?.id) {
+            throw new Error('No user ID returned from authentication')
+        }
 
-    return {
-        token: response.session.access_token,
-        user: { ...profile, email },
+        console.log('User authenticated successfully, fetching profile...')
+        const profile = await fetchUserProfile(response.user.id)
+        console.log('Profile fetched successfully:', profile)
+
+        return {
+            token: response.session.access_token,
+            user: { ...profile, email },
+        }
+    } catch (error) {
+        console.error('Error in apiSignIn:', error)
+        throw error
     }
 }
 
@@ -70,6 +84,30 @@ export async function apiUpdateUserProfile<T>(
 }
 
 export async function fetchUserProfile(userId: string) {
+    // First check if profile exists
+    const { count, error: countError } = await supabaseClient
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+
+    if (countError) {
+        console.error('Error checking profile existence:', countError)
+        throw new Error(`Failed to check profile existence: ${countError.message}`)
+    }
+
+    if (count === null) {
+        throw new Error('Unable to determine profile existence. Please try again.')
+    }
+
+    if (count === 0) {
+        throw new Error('User profile not found. Please contact support to create your profile.')
+    }
+
+    if (count > 1) {
+        console.warn(`Multiple profiles found for user ${userId}, count: ${count}`)
+        // This shouldn't happen due to UNIQUE constraint, but handle it gracefully
+    }
+
     const { data, error } = await supabaseClient
         .from('profiles')
         .select(
@@ -91,10 +129,15 @@ export async function fetchUserProfile(userId: string) {
             )`,
         )
         .eq('user_id', userId)
-        .single<User>()
+        .maybeSingle<User>()
 
     if (error) {
-        throw error.message
+        console.error('Error fetching user profile:', error)
+        throw new Error(`Failed to fetch user profile: ${error.message}`)
+    }
+
+    if (!data) {
+        throw new Error('User profile not found. Please contact support.')
     }
 
     return {
