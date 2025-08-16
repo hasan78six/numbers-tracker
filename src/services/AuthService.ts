@@ -14,6 +14,7 @@ export async function apiSignIn(
     const { email, password } = data
 
 <<<<<<< HEAD
+<<<<<<< HEAD
     try {
         const { data: response, error } =
             await supabaseClient.auth.signInWithPassword({
@@ -21,16 +22,22 @@ export async function apiSignIn(
                 password,
             })
 =======
+=======
+>>>>>>> parent of 53f2f73 (fix login)
     const { data: response, error } =
         await supabaseClient.auth.signInWithPassword({
             email,
             password,
         })
+<<<<<<< HEAD
+>>>>>>> parent of 53f2f73 (fix login)
+=======
 >>>>>>> parent of 53f2f73 (fix login)
 
     if (error) throw error
 
     const profile = await fetchUserProfile(response.user.id)
+<<<<<<< HEAD
 
 <<<<<<< HEAD
 <<<<<<< HEAD
@@ -52,6 +59,12 @@ export async function apiSignIn(
         console.error('Error in apiSignIn:', error)
         throw error
 =======
+    return {
+        token: response.session.access_token,
+        user: { ...profile, email },
+>>>>>>> parent of 53f2f73 (fix login)
+=======
+
     return {
         token: response.session.access_token,
         user: { ...profile, email },
@@ -102,6 +115,7 @@ export async function apiUpdateUserProfile<T>(
 export async function fetchUserProfile(userId: string) {
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     try {
         // Check if we have a valid session
         const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
@@ -135,6 +149,8 @@ export async function fetchUserProfile(userId: string) {
         // This shouldn't happen due to UNIQUE constraint, but handle it gracefully
     }
 
+=======
+>>>>>>> parent of 53f2f73 (fix login)
     const { data, error } = await supabaseClient
         .from('profiles')
         .select(
@@ -156,9 +172,10 @@ export async function fetchUserProfile(userId: string) {
             )`,
         )
         .eq('user_id', userId)
-        .maybeSingle<User>()
+        .single<User>()
 
     if (error) {
+<<<<<<< HEAD
         console.error('Error fetching user profile:', error)
         throw new Error(`Failed to fetch user profile: ${error.message}`)
     }
@@ -199,6 +216,9 @@ export async function fetchUserProfile(userId: string) {
 =======
     if (!data) {
         throw new Error('User profile not found. Please contact support.')
+=======
+        throw error.message
+>>>>>>> parent of 53f2f73 (fix login)
     }
 >>>>>>> parent of 625d6b8 (fix)
 
