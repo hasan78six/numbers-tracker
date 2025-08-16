@@ -8,31 +8,6 @@ import type {
 } from '@/@types/auth'
 import supabaseClient from '@/configs/supabase.config'
 
-// Test function to verify Supabase connection
-export async function testSupabaseConnection() {
-    try {
-        console.log('Testing Supabase connection...')
-        console.log('SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? 'Set' : 'Not set')
-        console.log('SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Set' : 'Not set')
-        
-        const { error } = await supabaseClient
-            .from('profiles')
-            .select('count', { count: 'exact', head: true })
-            .limit(1)
-        
-        if (error) {
-            console.error('Supabase connection test failed:', error)
-            return { success: false, error: error.message }
-        }
-        
-        console.log('Supabase connection test successful')
-        return { success: true }
-    } catch (error) {
-        console.error('Supabase connection test error:', error)
-        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
-    }
-}
-
 export async function apiSignIn(
     data: SignInCredential,
 ): Promise<SignInResponse> {
@@ -40,12 +15,6 @@ export async function apiSignIn(
 
 <<<<<<< HEAD
     try {
-        // Test Supabase connection first
-        const connectionTest = await testSupabaseConnection()
-        if (!connectionTest.success) {
-            throw new Error(`Supabase connection failed: ${connectionTest.error}`)
-        }
-
         const { data: response, error } =
             await supabaseClient.auth.signInWithPassword({
                 email,
@@ -64,19 +33,14 @@ export async function apiSignIn(
     const profile = await fetchUserProfile(response.user.id)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
         if (!response.session?.access_token) {
             throw new Error('No access token returned from authentication')
         }
 
+=======
+>>>>>>> parent of 625d6b8 (fix)
         console.log('User authenticated successfully, fetching profile...')
-        
-        // Ensure the session is set in the client before making profile queries
-        const { error: sessionError } = await supabaseClient.auth.setSession(response.session)
-        if (sessionError) {
-            console.error('Error setting session:', sessionError)
-            throw new Error(`Failed to set session: ${sessionError.message}`)
-        }
-
         const profile = await fetchUserProfile(response.user.id)
         console.log('Profile fetched successfully:', profile)
 
@@ -137,6 +101,7 @@ export async function apiUpdateUserProfile<T>(
 
 export async function fetchUserProfile(userId: string) {
 <<<<<<< HEAD
+<<<<<<< HEAD
     try {
         // Check if we have a valid session
         const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
@@ -144,37 +109,61 @@ export async function fetchUserProfile(userId: string) {
             console.error('Error getting session:', sessionError)
             throw new Error(`Session error: ${sessionError.message}`)
         }
+=======
+    // First check if profile exists
+    const { count, error: countError } = await supabaseClient
+        .from('profiles')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', userId)
+>>>>>>> parent of 625d6b8 (fix)
 
-        if (!session) {
-            console.error('No active session found')
-            throw new Error('No active session. Please log in again.')
-        }
+    if (countError) {
+        console.error('Error checking profile existence:', countError)
+        throw new Error(`Failed to check profile existence: ${countError.message}`)
+    }
 
-        console.log('Session found, user ID:', session.user.id)
-        console.log('Session expires at:', session.expires_at)
+    if (count === null) {
+        throw new Error('Unable to determine profile existence. Please try again.')
+    }
 
-        // First check if profile exists
-        const { count, error: countError } = await supabaseClient
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('user_id', userId)
+    if (count === 0) {
+        throw new Error('User profile not found. Please contact support to create your profile.')
+    }
 
-        if (countError) {
-            console.error('Error checking profile existence:', countError)
-            if (countError.code === '406') {
-                throw new Error('Authentication error: Please try logging in again')
-            }
-            throw new Error(`Failed to check profile existence: ${countError.message}`)
-        }
+    if (count > 1) {
+        console.warn(`Multiple profiles found for user ${userId}, count: ${count}`)
+        // This shouldn't happen due to UNIQUE constraint, but handle it gracefully
+    }
 
-        if (count === null) {
-            throw new Error('Unable to determine profile existence. Please try again.')
-        }
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select(
+            `id,
+            user_id,
+            first_name,
+            last_name,
+            avatar_url,
+            is_active,
+            user_type_id (
+             id,
+             type
+            ),
+            company_id (
+             id,
+             name,
+             address,
+             contact
+            )`,
+        )
+        .eq('user_id', userId)
+        .maybeSingle<User>()
 
-        if (count === 0) {
-            throw new Error('User profile not found. Please contact support to create your profile.')
-        }
+    if (error) {
+        console.error('Error fetching user profile:', error)
+        throw new Error(`Failed to fetch user profile: ${error.message}`)
+    }
 
+<<<<<<< HEAD
         if (count > 1) {
             console.warn(`Multiple profiles found for user ${userId}, count: ${count}`)
             // This shouldn't happen due to UNIQUE constraint, but handle it gracefully
@@ -207,49 +196,15 @@ export async function fetchUserProfile(userId: string) {
         throw error.message
     }
 >>>>>>> parent of 53f2f73 (fix login)
+=======
+    if (!data) {
+        throw new Error('User profile not found. Please contact support.')
+    }
+>>>>>>> parent of 625d6b8 (fix)
 
-        const { data, error } = await supabaseClient
-            .from('profiles')
-            .select(
-                `id,
-                user_id,
-                first_name,
-                last_name,
-                avatar_url,
-                is_active,
-                user_type_id (
-                 id,
-                 type
-                ),
-                company_id (
-                 id,
-                 name,
-                 address,
-                 contact
-                )`,
-            )
-            .eq('user_id', userId)
-            .maybeSingle<User>()
-
-        if (error) {
-            console.error('Error fetching user profile:', error)
-            if (error.code === '406') {
-                throw new Error('Authentication error: Please try logging in again')
-            }
-            throw new Error(`Failed to fetch user profile: ${error.message}`)
-        }
-
-        if (!data) {
-            throw new Error('User profile not found. Please contact support.')
-        }
-
-        return {
-            ...data,
-            authority: [data.user_type_id.type],
-            type: data.user_type_id.type,
-        }
-    } catch (error) {
-        console.error('Error in fetchUserProfile:', error)
-        throw error
+    return {
+        ...data,
+        authority: [data.user_type_id.type],
+        type: data.user_type_id.type,
     }
 }
