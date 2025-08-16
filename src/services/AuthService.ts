@@ -12,17 +12,9 @@ import supabaseClient from '@/configs/supabase.config'
 export async function testSupabaseConnection() {
     try {
         console.log('Testing Supabase connection...')
-        console.log('Environment:', {
-            NODE_ENV: import.meta.env.NODE_ENV,
-            MODE: import.meta.env.MODE,
-            VITE_SUPABASE_URL: import.meta.env.VITE_SUPABASE_URL ? 'Set' : 'Not set',
-            VITE_SUPABASE_ANON_KEY: import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Set' : 'Not set',
-            // Check if we're on Vercel
-            IS_VERCEL: !!import.meta.env.VERCEL,
-            VERCEL_ENV: import.meta.env.VERCEL_ENV || 'Not set'
-        })
+        console.log('SUPABASE_URL:', import.meta.env.VITE_SUPABASE_URL ? 'Set' : 'Not set')
+        console.log('SUPABASE_ANON_KEY:', import.meta.env.VITE_SUPABASE_ANON_KEY ? 'Set' : 'Not set')
         
-        // Test basic connection without authentication
         const { error } = await supabaseClient
             .from('profiles')
             .select('count', { count: 'exact', head: true })
@@ -30,19 +22,6 @@ export async function testSupabaseConnection() {
         
         if (error) {
             console.error('Supabase connection test failed:', error)
-            console.error('Error details:', {
-                code: error.code,
-                message: error.message,
-                details: error.details,
-                hint: error.hint
-            })
-            
-            // Check if it's a permissions/RLS issue
-            if (error.code === '406' || error.code === '42501') {
-                console.error('This appears to be a permissions or RLS policy issue')
-                return { success: false, error: 'Database permissions issue. Please check RLS policies.' }
-            }
-            
             return { success: false, error: error.message }
         }
         
@@ -163,16 +142,8 @@ export async function fetchUserProfile(userId: string) {
 
         console.log('Session found, user ID:', session.user.id)
         console.log('Session expires at:', session.expires_at)
-        console.log('Access token exists:', !!session.access_token)
-        console.log('Refresh token exists:', !!session.refresh_token)
-
-        // Log the current Supabase client state
-        const { data: { user } } = await supabaseClient.auth.getUser()
-        console.log('Current Supabase user:', user?.id)
-        console.log('Supabase client configured:', !!supabaseClient)
 
         // First check if profile exists
-        console.log('Checking profile existence for user:', userId)
         const { count, error: countError } = await supabaseClient
             .from('profiles')
             .select('*', { count: 'exact', head: true })
@@ -180,19 +151,11 @@ export async function fetchUserProfile(userId: string) {
 
         if (countError) {
             console.error('Error checking profile existence:', countError)
-            console.error('Error details:', {
-                code: countError.code,
-                message: countError.message,
-                details: countError.details,
-                hint: countError.hint
-            })
             if (countError.code === '406') {
                 throw new Error('Authentication error: Please try logging in again')
             }
             throw new Error(`Failed to check profile existence: ${countError.message}`)
         }
-
-        console.log('Profile count check successful, count:', count)
 
         if (count === null) {
             throw new Error('Unable to determine profile existence. Please try again.')
@@ -207,7 +170,6 @@ export async function fetchUserProfile(userId: string) {
             // This shouldn't happen due to UNIQUE constraint, but handle it gracefully
         }
 
-        console.log('Fetching full profile data...')
         const { data, error } = await supabaseClient
             .from('profiles')
             .select(
@@ -233,12 +195,6 @@ export async function fetchUserProfile(userId: string) {
 
         if (error) {
             console.error('Error fetching user profile:', error)
-            console.error('Error details:', {
-                code: error.code,
-                message: error.message,
-                details: error.details,
-                hint: error.hint
-            })
             if (error.code === '406') {
                 throw new Error('Authentication error: Please try logging in again')
             }
@@ -248,8 +204,6 @@ export async function fetchUserProfile(userId: string) {
         if (!data) {
             throw new Error('User profile not found. Please contact support.')
         }
-
-        console.log('Profile data fetched successfully:', data)
 
         return {
             ...data,
