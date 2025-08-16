@@ -38,6 +38,7 @@ export async function apiSignIn(
 ): Promise<SignInResponse> {
     const { email, password } = data
 
+<<<<<<< HEAD
     try {
         // Test Supabase connection first
         const connectionTest = await testSupabaseConnection()
@@ -50,16 +51,19 @@ export async function apiSignIn(
                 email,
                 password,
             })
+=======
+    const { data: response, error } =
+        await supabaseClient.auth.signInWithPassword({
+            email,
+            password,
+        })
+>>>>>>> parent of 53f2f73 (fix login)
 
-        if (error) {
-            console.error('Supabase auth error:', error)
-            throw error
-        }
+    if (error) throw error
 
-        if (!response.user?.id) {
-            throw new Error('No user ID returned from authentication')
-        }
+    const profile = await fetchUserProfile(response.user.id)
 
+<<<<<<< HEAD
         if (!response.session?.access_token) {
             throw new Error('No access token returned from authentication')
         }
@@ -83,6 +87,11 @@ export async function apiSignIn(
     } catch (error) {
         console.error('Error in apiSignIn:', error)
         throw error
+=======
+    return {
+        token: response.session.access_token,
+        user: { ...profile, email },
+>>>>>>> parent of 53f2f73 (fix login)
     }
 }
 
@@ -127,6 +136,7 @@ export async function apiUpdateUserProfile<T>(
 }
 
 export async function fetchUserProfile(userId: string) {
+<<<<<<< HEAD
     try {
         // Check if we have a valid session
         const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession()
@@ -169,6 +179,34 @@ export async function fetchUserProfile(userId: string) {
             console.warn(`Multiple profiles found for user ${userId}, count: ${count}`)
             // This shouldn't happen due to UNIQUE constraint, but handle it gracefully
         }
+=======
+    const { data, error } = await supabaseClient
+        .from('profiles')
+        .select(
+            `id,
+            user_id,
+            first_name,
+            last_name,
+            avatar_url,
+            is_active,
+            user_type_id (
+             id,
+             type
+            ),
+            company_id (
+             id,
+             name,
+             address,
+             contact
+            )`,
+        )
+        .eq('user_id', userId)
+        .single<User>()
+
+    if (error) {
+        throw error.message
+    }
+>>>>>>> parent of 53f2f73 (fix login)
 
         const { data, error } = await supabaseClient
             .from('profiles')

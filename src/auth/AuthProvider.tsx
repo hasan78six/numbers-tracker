@@ -124,7 +124,7 @@ function AuthProvider({ children }: AuthProviderProps) {
                         .select('is_active')
                         .eq('company_id', resp?.user.company_id?.id)
                         .neq('user_type_id', resp?.user.user_type_id.id)
-                        .maybeSingle()
+                        .single()
                     if (companyProfile && 'is_active' in companyProfile) {
                         if (!companyProfile.is_active) {
                             signOut()
